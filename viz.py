@@ -5,7 +5,8 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 import matplotlib
-matplotlib.use('TkAgg')
+matplotlib.use('tkAgg')
+from PIL import Image
 import matplotlib.pyplot as plt
 import numpy as np
 import argparse
@@ -154,11 +155,42 @@ def gatt(npy_path,debug=False,paint_event=False):
                 # Debug info
                 if debug:
                     print('rollback!save record[{}]'.format(thread))
+        
+        # milestone
+        if (j+1) % 10000==0:
+            if j+1 == args.endpoint:
+                print('[Plot] Current index of plot has reached [{}/{}].'.format(j+1,args.endpoint))
+            else:    
+                print('[Plot] Current index of plot has reached [{}/{}].'.format(j+1,args.endpoint),end='\r')
+            #print('=' * ((j+1)//10000) + '>',end='\r')
+    
+    # fetch timestamp
     t2 = time.time()
-    print('[Plot] time consume:{}'.format(t2-t1))
+    print('[Plot] time consume:{:.3f}s'.format(t2-t1))
     if args.savefigure:
-        plt.savefig(args.npy[:-3]+'jpg', bbox_inches='tight')
-    plt.show()
+        
+        # This way is very slow. reduce the speed by 2x
+        #plt.savefig(args.npy[:-3]+'png', bbox_inches='tight')
+        #print('[Save] Save the picture at {}.'.format(args.npy[:-3]+'png'))
+        
+        img = fig2img(plt)
+        img.save(args.npy[:-3]+'png')
+        print('[Save] Save the picture at {}.'.format(args.npy[:-3]+'png'))
+    else:
+        plt.show()
+    t3 = time.time()
+    print('[Save] time consume:{:.3f}s'.format(t3-t2))
+
+def fig2img(fig):
+    """Convert a Matplotlib figure to a PIL Image and return it"""
+    import io
+    buf = io.BytesIO()
+    fig.savefig(buf)
+    buf.seek(0)
+    img = Image.open(buf)
+    return img
+
+
 if __name__=="__main__":
     
     # arg
