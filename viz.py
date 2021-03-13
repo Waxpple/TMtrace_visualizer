@@ -27,12 +27,14 @@ def str2bool(v):
 parser = argparse.ArgumentParser(description='NTU 607 TMtrace visualizer',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
                             
+parser.add_argument('--name', metavar='Benchmark name(very important)', default= 'ssca2')
 parser.add_argument('--compress', metavar='Boolean of compress operation', type= str2bool, default= False)
 parser.add_argument('--path', metavar='Path to our trace file', default=None)
 parser.add_argument('--debug', metavar='Debug flag', type= str2bool, default=False)
 parser.add_argument('--csv', metavar='Boolean of store a csv file',type= str2bool , default= False)
 parser.add_argument('--npy', metavar='Path to our trace numpy file', default=None)
-parser.add_argument('--endpoint', metavar='Plot endpoint', type= int, default= 1000)
+parser.add_argument('--endpoint', metavar='Plot endpoint', type= int, default= -1)
+parser.add_argument('--startpoint', metavar='Plot startpoint', type= int, default= 0)
 parser.add_argument('--encoder', metavar='Encoder for parse trace file', default= 'event2')
 parser.add_argument('--savefigure', metavar='Boolean of store a png file.',type= str2bool , default= False)
 
@@ -46,13 +48,21 @@ def encode_event(event):
         return 2
     else:
         return -1
+    # if event == 'stm_start_entry':
+    #     return 0
+    # elif event == 'stm_commit_exit__return':
+    #     return 1
+    # elif event == 'stm_rollback_exit__return':
+    #     return 2
+    # else:
+    #     return -1
+
 def encode_event2(event):
-    if event == 'stm_start_entry':
+    if event == args.name+'_stm_start_entry':
         return 0
-    elif event == 'stm_commit_exit__return':
+    elif event == args.name+'_stm_commit_exit__return':
         return 1
-    elif event == 'stm_rollback_exit__return':
-        print('rollback')
+    elif event == args.name+'_stm_rollback_exit__return':
         return 2
     else:
         return -1
@@ -64,6 +74,7 @@ def data_sort(path,encoder):
     # read file
     df = pd.read_csv(path,delimiter=r"\s+",header=None,names=["name", "pid","thread_name","time","event","memory_address"])
     
+
     # drop column
     df = df.drop(['name','pid'], axis=1)
     
@@ -71,9 +82,9 @@ def data_sort(path,encoder):
     df.thread_name = df.thread_name.map(lambda x: int(str(x).strip('[').strip(']')))
     df.memory_address = df.memory_address.map(lambda x: int( str(x).strip('(').strip(')')[6:] ,16))
     if encoder =='event2':
-        df.event = df.event.map(lambda x: encode_event2(str(x).strip('probe_kmeans').strip(':')) )
+        df.event = df.event.map(lambda x: encode_event2(str(x).strip('probe_'+args.name).strip(':')) )
     else:
-        df.event = df.event.map(lambda x: encode_event(str(x).strip('probe_kmeans').strip(':')) )
+        df.event = df.event.map(lambda x: encode_event(str(x).strip('probe_'+args.name).strip(':')) )
 
     df.time = df.time.map(lambda x: int(float(x.strip(':'))*1000000))
     
@@ -93,16 +104,23 @@ def data_sort(path,encoder):
     t3 = time.time()
     print('[Compression] time consume:{}'.format(t2-t1))
     print('[Save I/O] time consume:{}'.format(t3-t2))
-    
+
 def gatt(npy_path,debug=False,paint_event=False):
     
     # fetch timestamp
     t1 = time.time()
 
 
+
     # load array
     array = numpy.load(npy_path)
-    array = array[0:args.endpoint,:]
+
+    # get endpoint
+    if int(args.endpoint)==-1:
+        args.endpoint = array.shape[0]
+
+    # slice array
+    array = array[args.startpoint:args.endpoint,:]
     
     # figure size
     plt.figure(figsize=(50,20))
@@ -110,7 +128,8 @@ def gatt(npy_path,debug=False,paint_event=False):
     # save first timestamp for base 
     time_offset = array[0,1]
     # create a record table
-    record = np.zeros((max(array[:,0])+1,len(array[0,:])))
+    record = np.full((int(max(array[:,0]))+1,len(array[0,:])),-1)
+
     if debug:
         print('create a record table with size{}'.format(record.shape))
     
@@ -142,7 +161,12 @@ def gatt(npy_path,debug=False,paint_event=False):
         else:
             
             # gatt char
-            plt.barh(thread,array[j,1]-record[thread,1],left=record[thread,1]-time_offset, color = 'green' if event==1 else 'red' )
+            if int(record[thread,2]) == -1:
+                #print('[Error] Attention! There is a event without entry point')
+                #print('[Error] Transaction event number:{}.'.format(j))
+                pass
+            else:
+                plt.barh(thread,array[j,1]-record[thread,1],left=record[thread,1]-time_offset, color = 'green' if event==1 else 'red' )
             
             # Debug info
             if paint_event:
@@ -155,9 +179,17 @@ def gatt(npy_path,debug=False,paint_event=False):
                 # Debug info
                 if debug:
                     print('rollback!save record[{}]'.format(thread))
+
+            # if commit event, clear the record
+            if event==1:
+                record[ thread,:]= np.full(record[thread,:].shape,-1)
+                #print('clear the record successfully!')
+                # Debug info
+                if debug:
+                    print('clear the record successfully!')
         
         # milestone
-        if (j+1) % 10000==0:
+        if (j+1) % 10000==0 or j+1 == args.endpoint:
             if j+1 == args.endpoint:
                 print('[Plot] Current index of plot has reached [{}/{}].'.format(j+1,args.endpoint))
             else:    
@@ -196,7 +228,6 @@ if __name__=="__main__":
     # arg
     global args
     args = parser.parse_args()
-    
     # conditional operation
     if args.compress:
         print('start to compress the original file and will save it as npy file format.')
