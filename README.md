@@ -53,3 +53,6 @@ usage: viz_realtime.py [-h] [--compress Boolean of compress operation]
               [--encoder Encoder for parse trace file]
               
               [--savefigure Boolean of store a png file.]
+              
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/JNLPVR3CU8w/0.jpg)](https://www.youtube.com/watch?v=JNLPVR3CU8w)
+
