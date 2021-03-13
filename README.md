@@ -19,23 +19,37 @@ usage: viz.py [-h] [--compress Boolean of compress operation]
 NTU 607 TMtrace visualizer
 
 optional arguments:
-  -h, --help            show this help message and exit
-  
-  --compress Boolean of compress operation
-  
-  --path Path to our trace file
-  
-  --debug Debug flag
-  
-  --csv Boolean of store a csv file
-  
-  --npy Path to our trace numpy file
-  
-  --endpoint Plot endpoint
-  
-  --encoder Encoder for parse trace file
-  
-  --savefigure Boolean of store a png file.
+    -h, --help            show this help message and exit
+
+    --compress Boolean of compress operation
+
+    --path Path to our trace file
+
+    --debug Debug flag
+
+    --csv Boolean of store a csv file
+
+    --npy Path to our trace numpy file
+
+    --endpoint Plot endpoint
+
+    --encoder Encoder for parse trace file
+
+    --savefigure Boolean of store a png file.
   
 
 ![image](https://github.com/Waxpple/TMtrace_visualizer/blob/main/probe_kmeans.jpg)
+
+# Real-time player
+
+usage: viz_realtime.py [-h] [--compress Boolean of compress operation]
+
+              [--path Path to our trace file] [--debug Debug flag]
+              
+              [--csv Boolean of store a csv file]
+              
+              [--npy Path to our trace numpy file] [--endpoint Plot endpoint]
+              
+              [--encoder Encoder for parse trace file]
+              
+              [--savefigure Boolean of store a png file.]
