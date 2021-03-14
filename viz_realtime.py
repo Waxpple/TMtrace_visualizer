@@ -276,7 +276,7 @@ class App(QtGui.QMainWindow):
 
 
 if __name__ == '__main__':
-
+    pg.setConfigOptions(useOpenGL=True)
     app = QtGui.QApplication(sys.argv)
     app.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)
     # arg
